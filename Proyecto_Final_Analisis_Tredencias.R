@@ -79,6 +79,16 @@ rtext_dtm <- TermDocumentMatrix(rtext)
 findAssocs(rtext_dtm, terms = findFreqTerms(rtext_dtm, lowfreq = 5), corlimit = 0.25)
 
 #d<-get_nrc_sentiment(rtext)
+head(d,10)
+td<-data.frame(t(d))
+td_new <- data.frame(rowSums(td[2:30000]))
+#Transformation and cleaning
+names(td_new)[1] <- "count"
+td_new <- cbind("sentiment" = rownames(td_new), td_new)
+rownames(td_new) <- NULL
+td_new2<-td_new[1:8,]
+#Plot One - count of words associated with each sentiment
+quickplot(sentiment, data=td_new2, weight=count, geom="bar", fill=sentiment, ylab="count")+ggtitle("Sentimientos dentro los textos")
 
 
 
