@@ -4,25 +4,34 @@ library(tm)
 library(stringr)
 library(ggplot2)
 #install.packages("ggrepel")
-install.packages("syuzhet")
+#install.packages("syuzhet")
 library(syuzhet)
 library(ggrepel)
 library(dplyr)
 library("wordcloud")
 #Crear la corpora con los PDFs 
-rtext <- readtext("D:/Mineria de datos/PROYECTO FINAL/PDF Technology")%>%
+rtext <- readtext("D:/Mineria de datos/PROYECTO FINAL/Trend_Tecnologies_Rstudio/PDF Technology")%>%
   tolower() %>%
   removeWords(stopwords("english")) %>% 
   strsplit(" ") %>%
-  unlist() %>%
+  unlist() %>% #producir un vector 
   stemDocument()%>%
   removeNumbers()%>%
   stripWhitespace()%>%
   removePunctuation()%>%
   str_replace_all("[^[:alpha:][:space:]]*", "")
-View(rtext)
+#View(rtext)
+
 #Eliminar los pescios en blanco
 rtext = rtext[!rtext %in% c("")]
+
+rtext = rtext[!rtext %in% c("will","use","can","technolog","new")]
+
+
+
+
+
+
 
 #Tabla para crear las plabras con frecuencias
 wordfreqs <- rtext %>%
@@ -75,10 +84,10 @@ summary(syuzhet_vector)
 # Find associations 
 rtext <- Corpus(VectorSource(rtext))
 rtext_dtm <- TermDocumentMatrix(rtext)
-#rtext <- as.matrix(rtext_dtm)
+rtext <- as.matrix(rtext_dtm)
 findAssocs(rtext_dtm, terms = findFreqTerms(rtext_dtm, lowfreq = 5), corlimit = 0.25)
 
-#d<-get_nrc_sentiment(rtext)
+d<-get_nrc_sentiment(rtext)
 head(d,10)
 td<-data.frame(t(d))
 td_new <- data.frame(rowSums(td[2:30000]))
@@ -92,7 +101,61 @@ quickplot(sentiment, data=td_new2, weight=count, geom="bar", fill=sentiment, yla
 
 
 
+#________________________________________________________________________________
+#Analisis con corpus 
+rtext <- readLines(file.choose())
+rtext_corpus <- VCorpus(VectorSource(rtext))
+rtext_corpus_clean <- tm_map(rtext_corpus_clean,content_transformer(tolower))
+rtext_corpus_clean <- tm_map(rtext_corpus_clean, 
+                                     removeNumbers) 
+rtext_corpus_clean <- tm_map(rtext_corpus_clean, removeWords, c(stopwords("english"),"will","can")) 
+rtext_corpus_clean <- tm_map(rtext_corpus_clean, 
+                                     removePunctuation)
+rtext_corpus_clean <- tm_map(rtext_corpus_clean, 
+                                     stemDocument)
+rtext_corpus_clean <- tm_map(rtext_corpus_clean, 
+                                     stripWhitespace) 
+
+rtext_data_dtm <- DocumentTermMatrix(rtext_corpus_clean)
+
+comentarios_palabras <- rtext_data_dtm$dimnames
+
+wordfreqs <- rtext_data_dtm$dimnames$Terms %>%
+  table() %>%
+  as.data.frame() %>%
+  arrange(desc(Freq))
+wordfreqs <- rtext %>%
+  table() %>%
+  as.data.frame() %>%
+  arrange(desc(Freq))
+
+colnames(wordfreqs) <- c("Palabras", "Frecuencia")
+head(wordfreqs)
+
+#Las 15 palabras mas frecuentes y sus frecuencias para graficar
+wfd <- table(rtext)
+wfd <- wfd[order(wfd, decreasing = T)]
+wfd <- wfd[1:15]
+View(wfd)
+#Pasar a dataframe para generar visualizaciones con GGPLOT
+wfd <- as.data.frame(wfd)
 
 
+#Grafico en barras para ver las palabras mas comun
+ggplot(data=wfd, aes(x=rtext, y=Freq)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  geom_text(aes(label=Freq), vjust=1.6, color="white", size=3.5)+
+  theme_minimal()+
+  labs(x = "Palabra", 
+       y = "Frecuencia de las palabras", 
+       title = "Palabras mas repetidas")
 
+# create wordcloud
+wordcloud(words = wordfreqs$Palabras, freq = wordfreqs$Frecuencia, 
+          max.words=150, scale=c(3,.9),random.order=FALSE, rot.per=0.30, 
+          colors=brewer.pal(6, "BrBG"))
 
+matriz <- as.matrix(rtext_data_dtm)
+matrizOrdenada <- sort(rowSums(matriz),decreasing=TRUE)
+dataframePalabras <- data.frame(palabra = comentarios_palabras$Terms[matrizOrdenada],freq=matrizOrdenada)
+head(dataframePalabras, 10)
