@@ -19,37 +19,36 @@ rtext <- readtext("D:/Mineria de datos/PROYECTO FINAL/Trend_Tecnologies_Rstudio/
   removeNumbers()%>%
   stripWhitespace()%>%
   removePunctuation()%>%
-  str_replace_all("[^[:alpha:][:space:]]*", "")
-#View(rtext)
+  str_replace_all("[^[:alpha:][:space:]]*", "") 
+# eliminar palabras determinadas por cuenta propia.
 
-#Eliminar los pescios en blanco
-rtext = rtext[!rtext %in% c("")]
+#Eliminar los pescios en blanco & stopwords
+myStopwords <- c(stopwords('english'),"will","use","can","technolog","new")# to add words
+rtext = rtext[!rtext %in% c("",myStopwords)]
 
-rtext = rtext[!rtext %in% c("will","use","can","technolog","new")]
+#crear elcorpus despues de la limpieza de texto
+rtext_corpus <- VCorpus(VectorSource(rtext))
+rtext_corpus_clean <- tm_map(rtext_corpus, removeWords,myStopwords ) 
+rtext_data_dtm <- DocumentTermMatrix(rtext_corpus_clean)
+comentarios_palabras <- rtext_data_dtm$dimnames
 
 
 
-
-
-
-
-#Tabla para crear las plabras con frecuencias
+#Tabla para crear la frecuencia de palabras
 wordfreqs <- rtext %>%
   table() %>%
   as.data.frame() %>%
   arrange(desc(Freq))
-
 colnames(wordfreqs) <- c("Palabras", "Frecuencia")
 head(wordfreqs)
 
-#Las 15 palabras mas frecuentes y sus frecuencias para graficar
+#Las 15 palabras mas frecuentes y sus frecuencias para graficar del 1 al 15
 wfd <- table(rtext)
 wfd <- wfd[order(wfd, decreasing = T)]
 wfd <- wfd[1:15]
 View(wfd)
 #Pasar a dataframe para generar visualizaciones con GGPLOT
 wfd <- as.data.frame(wfd)
-
 
 #Grafico en barras para ver las palabras mas comun
 ggplot(data=wfd, aes(x=rtext, y=Freq)) +
@@ -116,7 +115,7 @@ rtext_corpus_clean <- tm_map(rtext_corpus_clean,
 rtext_corpus_clean <- tm_map(rtext_corpus_clean, 
                                      stripWhitespace) 
 
-rtext_data_dtm <- DocumentTermMatrix(rtext_corpus_clean)
+rtext_data_dtm <- DocumentTermMatrix(rtext_corpus)
 
 comentarios_palabras <- rtext_data_dtm$dimnames
 
